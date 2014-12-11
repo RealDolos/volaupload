@@ -28,7 +28,7 @@ except ImportError:
     POSIX_FADV_WILLNEED = 0
 # pylint: enable=no-name-in-module
 
-__version__ = "0.1"
+__version__ = "0.2"
 FAC = 1024.0 * 1024.0
 BUFFER_SIZE = 1 << 26
 BLOCK_SIZE = 1 << 22
