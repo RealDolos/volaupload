@@ -9,6 +9,7 @@ import sys
 from configparser import ConfigParser
 from datetime import datetime
 from functools import partial
+from time import sleep
 
 # pylint: disable=no-name-in-module
 from path import path
@@ -221,7 +222,7 @@ def main():
 
             print("Pushing attack bytes to mainframe...")
             for i, file in enumerate(files):
-                for attempt in range(3):
+                for attempt in range(25):
                     try:
                         upload(room, file, nums=(i + 1, len(files)))
                         total += file.size
@@ -231,6 +232,7 @@ def main():
                         print("\nFailed to upload {}: {} (attempt: {})".
                               format(file, ex, attempt),
                               file=sys.stderr)
+                        sleep(attempt + 0.1)
     except Exception as ex:
         print("Failure to fly: {}".format(ex), file=sys.stderr)
         return 1
