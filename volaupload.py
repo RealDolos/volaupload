@@ -146,6 +146,7 @@ def upload(room, file, nums):
     with open(file, "rb", buffering=BLOCK_SIZE) as advp:
         callback = partial(progress_callback,
                            file=advp, nums=nums, stat=stat)
+        callback(0, file.size)
         room.upload_file(advp,
                          upload_as=file.name,
                          blocksize=BLOCK_SIZE,
