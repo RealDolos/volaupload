@@ -174,6 +174,9 @@ def parse_args():
     parser.add_argument('--sort', '-s', dest='sort', type=str, default="name",
                         help=('upload files in some order ({})'.
                               format(','.join(sorts))))
+    parser.add_argument("--delete-after", dest="delete", action="store_true",
+                        help="Delete files after successful upload")
+    parser.set_defaults(delete=False)
     parser.add_argument('files', metavar='FILE', type=str, nargs='+',
                         help='files to upload')
     args = parser.parse_args()
@@ -233,6 +236,13 @@ def main():
                         upload(room, file, nums=(i + 1, len(files)))
                         total += file.size
                         stat.record(total)
+                        if args.delete:
+                            try:
+                                file.unlink()
+                            except Exception as ex:
+                                print("Failed to delete file after upload: {}, {}".
+                                      format(file, ex), file=sys.stderr)
+
                         break
                     except Exception as ex:
                         print("\nFailed to upload {}: {} (attempt: {})".
