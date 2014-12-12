@@ -3,6 +3,7 @@
 # pip install path.py volapi ;)
 
 import argparse
+import os
 import re
 import sys
 import random
@@ -130,11 +131,15 @@ def progress_callback(cur, tot, file, nums, stat):
     ccur, ctot, per = cur / FAC, tot / FAC, float(cur) / tot
     args = tuple(nums) + (file.name, ccur, ctot, per, stat.rate,
                           stat.rate_last, stat.runtime, stat.eta(tot))
-    fmt = ("\r{}/{} - {} - {:.1f}/{:.1f} - "
+    fmt = ("{}/{} - {} - {:.1f}/{:.1f} - "
            "{:.1%} - {:.2f}MB/s ({:.2f}MB/s), "
-           "{:.2f}s (eta:{:.2f}s)\033[K")
-    print(fmt.format(*args),
-          end="", flush=True)
+           "{:.2f}s (eta:{:.2f}s)")
+    if sys.stdout.isatty():
+        clear = "  " if os.name == "nt" else "\033[K"
+        print("\r{}{}".format(fmt, clear).format(*args),
+              end="", flush=True)
+    else:
+        print(fmt.format(*args), flush=True)
 
     if cur + BUFFER_SIZE < tot:
         try_advise(file, cur + BUFFER_SIZE, BUFFER_SIZE * 2)
