@@ -5,6 +5,7 @@
 import argparse
 import re
 import sys
+import random
 
 from configparser import ConfigParser
 from datetime import datetime
@@ -156,7 +157,7 @@ def upload(room, file, nums):
 
 def parse_args():
     """Parse command line arguments into something sane!"""
-    sorts = tuple(SORTING.keys()) + ("none",)
+    sorts = tuple(SORTING.keys()) + ("none", "rnd")
     parser = argparse.ArgumentParser(
         description="Uploads one or more file to vola",
         epilog=("To set a default user name and optionally password, create "
@@ -217,7 +218,11 @@ def main():
                 print("done")
 
             files = [path(a) for a in args.files]
-            if args.sort and args.sort != "none":
+            if args.sort == "none":
+                pass
+            elif args.sort == "rnd":
+                random.shuffle(files)
+            elif args.sort:
                 files = sorted(files, key=SORTING[args.sort])
 
             print("Pushing attack bytes to mainframe...")
