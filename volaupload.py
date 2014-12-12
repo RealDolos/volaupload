@@ -189,6 +189,9 @@ def parse_args():
     parser.add_argument("--bs", "-b", dest="block_size", type=int,
                         default=int(config.get("block_size", BLOCK_SIZE)),
                         help="Use this block size")
+    parser.add_argument("--attempts", "-t", dest="attempts", type=int,
+                        default=int(config.get("attempts", 25)),
+                        help="Retry failed uploads this many times")
     parser.set_defaults(delete=False)
     parser.add_argument('files', metavar='FILE', type=str, nargs='+',
                         help='files to upload')
@@ -232,7 +235,7 @@ def main():
 
             print("Pushing attack bytes to mainframe...")
             for i, file in enumerate(files):
-                for attempt in range(25):
+                for attempt in range(args.attempts):
                     try:
                         upload(room, file, nums=(i + 1, len(files)),
                                block_size=args.block_size)
@@ -251,7 +254,7 @@ def main():
                         print("\nFailed to upload {}: {} (attempt: {})".
                               format(file, ex, attempt),
                               file=sys.stderr)
-                        sleep(attempt + 0.1)
+                        sleep(attempt * 0.1)
     except Exception as ex:
         print("Failure to fly: {}".format(ex), file=sys.stderr)
         return 1
