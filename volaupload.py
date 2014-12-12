@@ -32,7 +32,7 @@ except ImportError:
 __version__ = "0.2"
 FAC = 1024.0 * 1024.0
 BUFFER_SIZE = 1 << 26
-BLOCK_SIZE = 1 << 22
+BLOCK_SIZE = 1 << 20
 
 
 def natsort(val):
@@ -140,16 +140,16 @@ def progress_callback(cur, tot, file, nums, stat):
         try_advise(file, cur + BUFFER_SIZE, BUFFER_SIZE * 2)
 
 
-def upload(room, file, nums):
+def upload(room, file, nums, block_size=BLOCK_SIZE):
     """Uploads a file and prints the progress while pushing bits and bytes"""
     stat = Stat()
-    with open(file, "rb", buffering=BLOCK_SIZE) as advp:
+    with open(file, "rb", buffering=block_size) as advp:
         callback = partial(progress_callback,
                            file=advp, nums=nums, stat=stat)
         callback(0, file.size)
         room.upload_file(advp,
                          upload_as=file.name,
-                         blocksize=BLOCK_SIZE,
+                         blocksize=block_size,
                          callback=callback)
 
     print("\n{} done in {:.2f}secs\n".
@@ -159,45 +159,46 @@ def upload(room, file, nums):
 def parse_args():
     """Parse command line arguments into something sane!"""
     sorts = tuple(SORTING.keys()) + ("none", "rnd")
+
+    config = ConfigParser()
+    try:
+        config.read(path("~/.vola.conf").expand())
+        config = config["vola"]
+    except Exception:
+        config = dict()
+
     parser = argparse.ArgumentParser(
         description="Uploads one or more file to vola",
         epilog=("To set a default user name and optionally password, create "
                 "~/.vola.conf with a [vola] section and set user= and passwd= "
-                "accordingly")
+                " block_size accordingly")
         )
     parser.add_argument('--room', '-r', dest='room', type=str, required=True,
                         help='room to upload to')
-    parser.add_argument('--user', '-u', dest='user', type=str, default=None,
+    parser.add_argument('--user', '-u', dest='user', type=str,
+                        default=config.get("user", None),
                         help='user name to use')
     parser.add_argument('--passwd', '-p', dest='passwd', type=str,
+                        default=config.get("passwd", None),
                         help='password if you wanna greenfag')
     parser.add_argument('--sort', '-s', dest='sort', type=str, default="name",
                         help=('upload files in some order ({})'.
                               format(','.join(sorts))))
     parser.add_argument("--delete-after", dest="delete", action="store_true",
                         help="Delete files after successful upload")
+    parser.add_argument("--bs", "-b", dest="block_size", type=int,
+                        default=int(config.get("block_size", BLOCK_SIZE)),
+                        help="Use this block size")
     parser.set_defaults(delete=False)
     parser.add_argument('files', metavar='FILE', type=str, nargs='+',
                         help='files to upload')
     args = parser.parse_args()
 
-    if args.user == "":
-        parser.error("No valid user name provided")
-    if not args.user:
-        config = ConfigParser()
-        try:
-            config.read(path("~/.vola.conf").expand())
-        except Exception:
-            pass
-        else:
-            try:
-                args.user = config["vola"]["user"]
-                if not args.passwd:
-                    args.passwd = config["vola"]["passwd"]
-            except Exception:
-                pass
     if not args.user or not re.match(r"[\w\d]{3,12}$", args.user):
         parser.error("No valid user name provided")
+
+    if args.passwd and args.passwd == "":
+        parser.error("No valid user password provided")
 
     if not args.room:
         parser.error("No valid room provided")
@@ -233,14 +234,16 @@ def main():
             for i, file in enumerate(files):
                 for attempt in range(25):
                     try:
-                        upload(room, file, nums=(i + 1, len(files)))
+                        upload(room, file, nums=(i + 1, len(files)),
+                               block_size=args.block_size)
                         total += file.size
                         stat.record(total)
                         if args.delete:
                             try:
                                 file.unlink()
                             except Exception as ex:
-                                print("Failed to delete file after upload: {}, {}".
+                                print("Failed to delete file after upload: "
+                                      "{}, {}".
                                       format(file, ex), file=sys.stderr)
 
                         break
