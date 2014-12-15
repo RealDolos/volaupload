@@ -45,7 +45,7 @@ def natsort(val):
 
 def to_name(file):
     """Sortkey by-name"""
-    return natsort(file.name.lower()), natsort(file.parent)
+    return natsort(file.name.casefold()), natsort(file.parent)
 
 
 def to_size(file):
