@@ -4,15 +4,16 @@
 
 import argparse
 import os
+import random
 import re
 import sys
-import random
 
 from configparser import ConfigParser
 from datetime import datetime
 from functools import partial
 from time import sleep
 
+# False-positive
 # pylint: disable=no-name-in-module
 from path import path
 # pylint: enable=no-name-in-module
@@ -52,7 +53,8 @@ def to_size(file):
     return file.size
 
 
-SORTING = dict(name=to_name, size=to_size)
+SORTING = dict(name=to_name,
+               size=to_size)
 
 
 def try_advise(file, offset, length):
@@ -141,6 +143,7 @@ def progress_callback(cur, tot, file, nums, stat):
     else:
         print(fmt.format(*args), flush=True)
 
+    # Tell OS to buffer some moar!
     if cur + BUFFER_SIZE < tot:
         try_advise(file, cur + BUFFER_SIZE, BUFFER_SIZE * 2)
 
@@ -220,6 +223,15 @@ def parse_args():
 
 def main():
     """Program, kok"""
+
+    def try_unlink(file):
+        """Attempt to unlink a file, or else print an error"""
+        try:
+            file.unlink()
+        except Exception as ex:
+            print("Failed to delete file after upload: {}, {}".
+                  format(file, ex), file=sys.stderr)
+
     args = parse_args()
 
     stat = Stat()
@@ -243,21 +255,20 @@ def main():
                 files = sorted(files, key=SORTING[args.sort])
 
             print("Pushing attack bytes to mainframe...")
+            upload_file = partial(upload,
+                                  room=room,
+                                  block_size=args.block_size)
             for i, file in enumerate(files):
                 for attempt in range(args.attempts):
                     try:
-                        upload(room, file, nums=(i + 1, len(files)),
-                               block_size=args.block_size)
+                        nums = i + 1, len(files)
+                        upload_file(file=file, nums=nums)
                         total += file.size
                         stat.record(total)
                         if args.delete:
-                            try:
-                                file.unlink()
-                            except Exception as ex:
-                                print("Failed to delete file after upload: "
-                                      "{}, {}".
-                                      format(file, ex), file=sys.stderr)
+                            try_unlink(file)
 
+                        # Exit attempt loop
                         break
                     except Exception as ex:
                         print("\nFailed to upload {}: {} (attempt: {})".
