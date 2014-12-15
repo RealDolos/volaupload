@@ -211,6 +211,10 @@ def parse_args():
     if not args.room:
         parser.error("No valid room provided")
 
+    args.files = [path(a) for a in args.files if path(a).isfile()]
+    if not len(args.files):
+        parser.error("No valid files selected")
+
     return args
 
 
@@ -230,7 +234,7 @@ def main():
                 room.user.login(args.passwd)
                 print("done")
 
-            files = [path(a) for a in args.files]
+            files = args.files
             if args.sort == "none":
                 pass
             elif args.sort == "rnd":
