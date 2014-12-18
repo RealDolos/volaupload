@@ -7,6 +7,7 @@ import os
 import random
 import re
 import sys
+import warnings
 
 from configparser import ConfigParser
 from datetime import datetime
@@ -233,6 +234,7 @@ def main():
             print("Failed to delete file after upload: {}, {}".
                   format(file, ex), file=sys.stderr)
 
+    warnings.simplefilter("ignore")
     args = parse_args()
 
     stat = Stat()
