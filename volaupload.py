@@ -3,9 +3,11 @@
 # pip install path.py volapi ;)
 
 import argparse
+import math
 import os
 import random
 import re
+import shutil
 import sys
 import warnings
 
@@ -128,22 +130,53 @@ class Stat:
             return 0.0
 
 
+def shorten(string, length):
+    """Shorten a string to a specific length, cropping in the middle"""
+    len2 = length // 2
+    lens = len(string)
+    if lens > length:
+        return "{}…{}".format(string[:len2], string[lens - len2 + 1:])
+    return string
+
+
+def progressbar(cur, tot, length):
+    """Generate a progress bar"""
+    per = math.floor(cur * float(length) / tot)
+    return "[{}{}]".format("#" * per, " " * (length - per))
+
+
 def progress_callback(cur, tot, file, nums, stat):
     """ Print progress (and fadvise)"""
     stat.record(cur)
 
+    cols = shutil.get_terminal_size((25, 72)).columns
     ccur, ctot, per = cur / FAC, tot / FAC, float(cur) / tot
-    args = tuple(nums) + (file.name, ccur, ctot, per, stat.rate,
-                          stat.rate_last, stat.runtime, stat.eta(tot))
-    fmt = ("{}/{} - {} - {:.1f}/{:.1f} - "
-           "{:.1%} - {:.2f}MB/s ({:.2f}MB/s), "
-           "{:.2f}s (eta:{:.2f}s)")
-    if sys.stdout.isatty():
-        clear = "  " if os.name == "nt" else "\033[K"
-        print("\r{}{}".format(fmt, clear).format(*args),
+    args = (progressbar(nums["cur"] + cur, nums["total"], 10),
+            nums["item"], nums["files"],
+            progressbar(cur, tot, 30 if cols > 80 else 20), per,
+            ccur, ctot, stat.rate,
+            stat.rate_last, stat.runtime, stat.eta(tot))
+    fmt = ("\033[1m{}\033[0m \033[31;1m{}/{}\033[0m - "
+           "\033[33;1m{}\033[0m \033[1m{:.1%}\033[0m "
+           "[\033[32m{{}}\033[0m] {:.1f}/{:.1f} - "
+           "\033[1m{:.2f}MB/s\033[0m ({:.2f}MB/s), "
+           "\033[34;1m{:.2f}s\033[0m/{:.2f}s")
+    line = fmt.format(*args)
+    linestripped = re.sub("\033\[.*?m", "", line)
+    line = line.format(shorten(file.name,
+                               max(10, cols - len(linestripped) - 2)))
+    linestripped = re.sub("\033\[.*?m", "", line)
+    cols = max(0, cols - len(linestripped) - 2)
+    tty = sys.stdout.isatty()
+    if not tty or os.name == "nt":
+        line = linestripped
+
+    if tty:
+        clear = "  " * cols if os.name == "nt" else "\033[K"
+        print("\r{}{}".format(line, clear),
               end="", flush=True)
     else:
-        print(fmt.format(*args), flush=True)
+        print(line, flush=True)
 
     # Tell OS to buffer some moar!
     if cur + BUFFER_SIZE < tot:
@@ -238,7 +271,7 @@ def main():
     args = parse_args()
 
     stat = Stat()
-    total = 0
+    total_current = 0
     try:
         print("Starting DoS... ", end="", flush=True)
         with Room(args.room, args.user) as room:
@@ -256,6 +289,7 @@ def main():
                 random.shuffle(files)
             elif args.sort:
                 files = sorted(files, key=SORTING[args.sort])
+            total_length = sum(f.size for f in files)
 
             print("Pushing attack bytes to mainframe...")
             upload_file = partial(upload,
@@ -264,10 +298,11 @@ def main():
             for i, file in enumerate(files):
                 for attempt in range(args.attempts):
                     try:
-                        nums = i + 1, len(files)
+                        nums = dict(item=i + 1, files=len(files),
+                                    cur=total_current, total=total_length)
                         upload_file(file=file, nums=nums)
-                        total += file.size
-                        stat.record(total)
+                        total_current += file.size
+                        stat.record(total_current)
                         if args.delete:
                             try_unlink(file)
 
