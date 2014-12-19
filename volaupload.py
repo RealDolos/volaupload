@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """ RealDolos' funky volafile upload tool"""
 # pip install path.py volapi ;)
+# pylint: disable=broad-except
 
 import argparse
 import math
@@ -9,6 +10,7 @@ import random
 import re
 import shutil
 import sys
+import time
 import warnings
 
 import requests
@@ -16,7 +18,6 @@ import requests
 from configparser import ConfigParser
 from datetime import datetime
 from functools import partial
-from time import sleep
 
 # False-positive
 # pylint: disable=no-name-in-module
@@ -149,6 +150,7 @@ def progressbar(cur, tot, length):
 
 def progress_callback(cur, tot, file, nums, stat):
     """ Print progress (and fadvise)"""
+    # pylint: disable=anomalous-backslash-in-string
     stat.record(cur)
 
     cols = shutil.get_terminal_size((25, 72)).columns
@@ -156,17 +158,17 @@ def progress_callback(cur, tot, file, nums, stat):
     ptot = ""
     if nums["files"] > 1:
         ptot = progressbar(nums["cur"] + cur, nums["total"], 10) + " "
-    args = (ptot,
-            nums["item"], nums["files"],
-            progressbar(cur, tot, 30 if cols > 80 else 20), per,
-            ccur, ctot, stat.rate,
-            stat.rate_last, stat.runtime, stat.eta(tot))
     fmt = ("\033[1m{}\033[0m\033[31;1m{}/{}\033[0m - "
            "\033[33;1m{}\033[0m \033[1m{:.1%}\033[0m "
            "[\033[32m{{}}\033[0m] {:.1f}/{:.1f} - "
            "\033[1m{:.2f}MB/s\033[0m ({:.2f}MB/s), "
            "\033[34;1m{:.2f}s\033[0m/{:.2f}s")
-    line = fmt.format(*args)
+    line = fmt.format(ptot,
+                      nums["item"], nums["files"],
+                      progressbar(cur, tot, 30 if cols > 80 else 20),
+                      per,
+                      ccur, ctot, stat.rate,
+                      stat.rate_last, stat.runtime, stat.eta(tot))
     linestripped = re.sub("\033\[.*?m", "", line)
     line = line.format(shorten(file.name,
                                max(10, cols - len(linestripped) - 2)))
@@ -327,7 +329,7 @@ def main():
                         print("\nFailed to upload {}: {} (attempt: {})".
                               format(file, ex, attempt),
                               file=sys.stderr)
-                        sleep(attempt * 0.1)
+                        time.sleep(attempt * 0.1)
     except Exception as ex:
         print("Failure to fly: {}".format(ex), file=sys.stderr)
         return 1
