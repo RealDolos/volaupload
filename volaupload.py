@@ -42,6 +42,8 @@ __version__ = "0.4"
 FAC = 1024.0 * 1024.0
 BUFFER_SIZE = 1 << 26
 BLOCK_SIZE = 1 << 20
+CONFIG = path("~/.vola.conf").expand()
+UPDATE_INFO = "https://api.github.com/repos/RealDolos/volaupload/tags"
 
 
 def natsort(val):
@@ -212,7 +214,7 @@ def parse_args():
 
     config = ConfigParser()
     try:
-        config.read(path("~/.vola.conf").expand())
+        config.read(CONFIG)
         config = config["vola"]
     except Exception:
         config = dict()
@@ -263,28 +265,58 @@ def parse_args():
     return args
 
 
+def check_update():
+    """Check if there is a new version"""
+    config = ConfigParser()
+    try:
+        config.read(CONFIG)
+        try:
+            section = config["update"]
+        except Exception:
+            config.add_section("update")
+            section = config["update"]
+    except Exception:
+        section = dict()
+
+    check = float(section.get("check", 0))
+    ver = section.get("version", __version__)
+    url = section.get("url", None)
+    now = time.time()
+
+    if check + 86400 < now:
+        ver = requests.get(UPDATE_INFO).json()[0]
+        url = ver["zipball_url"]
+        ver = ver["name"]
+        section["check"] = str(now)
+        section["version"] = ver
+        section["url"] = url
+        with open(CONFIG, "w") as configfile:
+            config.write(configfile)
+
+    if ([int(i) for i in ver.replace("v", "").split(".")] >
+            [int(i) for i in __version__.split(".")] and url):
+        print("New version {} available:\nInstall: pip3 install -U {}".
+              format(ver, url))
+
+
+def try_unlink(file):
+    """Attempt to unlink a file, or else print an error"""
+    try:
+        file.unlink()
+    except Exception as ex:
+        print("Failed to delete file after upload: {}, {}".
+              format(file, ex), file=sys.stderr)
+
+
 def main():
     """Program, kok"""
-
-    def try_unlink(file):
-        """Attempt to unlink a file, or else print an error"""
-        try:
-            file.unlink()
-        except Exception as ex:
-            print("Failed to delete file after upload: {}, {}".
-                  format(file, ex), file=sys.stderr)
+    warnings.simplefilter("ignore")
 
     try:
-        v = requests.get(
-            "https://api.github.com/repos/RealDolos/volaupload/tags").json()[0]
-        if ([int(i) for i in v["name"].replace("v", "").split(".")] >
-            [int(i) for i in __version__.split(".")]):
-            print("New version {} available:\nInstall: pip3 install -U {}".
-                  format(v["name"], v["zipball_url"]))
-    except:
-        pass
+        check_update()
+    except Exception as ex:
+        print("Failed to check for new version:", ex, file=sys.stderr)
 
-    warnings.simplefilter("ignore")
     args = parse_args()
 
     stat = Stat()
