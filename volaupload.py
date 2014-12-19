@@ -11,6 +11,8 @@ import shutil
 import sys
 import warnings
 
+import requests
+
 from configparser import ConfigParser
 from datetime import datetime
 from functools import partial
@@ -269,6 +271,16 @@ def main():
         except Exception as ex:
             print("Failed to delete file after upload: {}, {}".
                   format(file, ex), file=sys.stderr)
+
+    try:
+        v = requests.get(
+            "https://api.github.com/repos/RealDolos/volaupload/tags").json()[0]
+        if ([int(i) for i in v["name"].replace("v", "").split(".")] >
+            [int(i) for i in __version__.split(".")]):
+            print("New version {} available:\nInstall: pip3 install -U {}".
+                  format(v["name"], v["zipball_url"]))
+    except:
+        pass
 
     warnings.simplefilter("ignore")
     args = parse_args()
