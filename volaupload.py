@@ -151,12 +151,15 @@ def progress_callback(cur, tot, file, nums, stat):
 
     cols = shutil.get_terminal_size((25, 72)).columns
     ccur, ctot, per = cur / FAC, tot / FAC, float(cur) / tot
-    args = (progressbar(nums["cur"] + cur, nums["total"], 10),
+    ptot = ""
+    if nums["files"] > 1:
+        ptot = progressbar(nums["cur"] + cur, nums["total"], 10) + " "
+    args = (ptot,
             nums["item"], nums["files"],
             progressbar(cur, tot, 30 if cols > 80 else 20), per,
             ccur, ctot, stat.rate,
             stat.rate_last, stat.runtime, stat.eta(tot))
-    fmt = ("\033[1m{}\033[0m \033[31;1m{}/{}\033[0m - "
+    fmt = ("\033[1m{}\033[0m\033[31;1m{}/{}\033[0m - "
            "\033[33;1m{}\033[0m \033[1m{:.1%}\033[0m "
            "[\033[32m{{}}\033[0m] {:.1f}/{:.1f} - "
            "\033[1m{:.2f}MB/s\033[0m ({:.2f}MB/s), "
