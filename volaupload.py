@@ -340,7 +340,8 @@ def main():
                 files = sorted(files, key=SORTING[args.sort])
             total_length = sum(f.size for f in files)
 
-            print("Pushing attack bytes to mainframe...")
+            print("Pushing attack bytes to mainframe... {:.2f}MB in total".
+                  format(total_length / FAC))
             upload_file = partial(upload,
                                   room=room,
                                   block_size=args.block_size)
