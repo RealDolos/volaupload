@@ -158,19 +158,23 @@ def progress_callback(cur, tot, file, nums, stat):
     cols = shutil.get_terminal_size((25, 72)).columns
     ccur, ctot, per = cur / FAC, tot / FAC, float(cur) / tot
     ptot = ""
+    lnum = len(str(nums["files"]))
     if nums["files"] > 1:
         ptot = progressbar(nums["cur"] + cur, nums["total"], 10) + " "
-    fmt = ("\033[1m{}\033[0m\033[31;1m{}/{}\033[0m - "
-           "\033[33;1m{}\033[0m \033[1m{:.1%}\033[0m "
+    fmt = ("\033[1m{}\033[0m"
+           "\033[31;1m{:{}}/{:{}}\033[0m - "
+           "\033[33;1m{}\033[0m "
+           "\033[1m{:6.1%}\033[0m "
            "[\033[32m{{}}\033[0m] {:.1f}/{:.1f} - "
            "\033[1m{:.2f}MB/s\033[0m ({:.2f}MB/s), "
            "\033[34;1m{:.2f}s\033[0m/{:.2f}s")
     line = fmt.format(ptot,
-                      nums["item"], nums["files"],
+                      nums["item"], lnum, nums["files"], lnum,
                       progressbar(cur, tot, 30 if cols > 80 else 20),
                       per,
-                      ccur, ctot, stat.rate,
-                      stat.rate_last, stat.runtime, stat.eta(tot))
+                      ccur, ctot,
+                      stat.rate, stat.rate_last,
+                      stat.runtime, stat.eta(tot))
     linestripped = re.sub("\033\[.*?m", "", line)
     line = line.format(shorten(file.name,
                                max(10, cols - len(linestripped) - 2)))
