@@ -327,7 +327,7 @@ def main():
     total_current = 0
     try:
         print("Starting DoS... ", end="", flush=True)
-        with Room(args.room, args.user) as room:
+        with Room(args.room, args.user, subscribe=False) as room:
             print("done")
             if args.passwd:
                 print("Greenfagging in as {}... ".format(args.user),
