@@ -149,7 +149,8 @@ def shorten(string, length):
 def progressbar(cur, tot, length):
     """Generate a progress bar"""
     per = math.floor(cur * float(length) / tot)
-    return "[{}{}]".format("#" * per, " " * (length - per))
+    kok = "kok_topkok_" * per
+    return "[{}{}]".format(kok[:per], " " * (length - per))
 
 
 def progress_callback(cur, tot, file, nums, stat):
@@ -174,7 +175,7 @@ def progress_callback(cur, tot, file, nums, stat):
            )
     line = fmt.format(ptot,
                       nums["item"], lnum, nums["files"], lnum,
-                      progressbar(cur, tot, 30 if cols > 80 else 20),
+                      progressbar(cur, tot, 40 if cols > 80 else 30),
                       per,
                       ccur, ctot,
                       stat.rate, stat.rate_last,
