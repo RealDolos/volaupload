@@ -262,7 +262,19 @@ def parse_args():
     if not args.room:
         parser.error("No valid room provided")
 
-    args.files = [path(a) for a in args.files if path(a).isfile()]
+    def files_because_windows_is_stupid(files):
+        """Windows is too stupid to glob"""
+        for f in files:
+            f = path(f)
+            if "*" in f or "?" in f and os.name == "nt":
+                parent = f.parent or path(".")
+                yield from parent.files(str(f.name))
+                continue
+            if f.isfile():
+                yield f
+
+    args.files = list(files_because_windows_is_stupid(args.files))
+
     if not len(args.files):
         parser.error("No valid files selected")
 
