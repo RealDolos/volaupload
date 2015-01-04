@@ -170,8 +170,7 @@ def progress_callback(cur, tot, file, nums, stat):
            "\033[33;1m{}\033[0m "
            "\033[1m{:6.1%}\033[0m "
            "{{}} {:.1f}/{:.1f} - "
-           "\033[1m{:5.2f}MB/s\033[0m ({:5.2f}MB/s), \033[34;1m{:>12.12}\033[0m"
-           )
+           "\033[1m{:5.2f}MB/s\033[0m ({:5.2f}MB/s), \033[34;1m{:>12.12}\033[0m")
     line = fmt.format(ptot,
                       nums["item"], lnum, nums["files"], lnum,
                       progressbar(cur, tot, 30 if cols > 80 else 20),
@@ -183,13 +182,13 @@ def progress_callback(cur, tot, file, nums, stat):
     line = line.format(shorten(file.name,
                                max(10, cols - len(linestripped) - 2)))
     linestripped = re.sub("\033\[.*?m", "", line)
-    cols = max(0, cols - len(linestripped) - 2)
+    cols = max(0, cols - len(linestripped) - 4)
     tty = sys.stdout.isatty()
     if not tty or os.name == "nt":
         line = linestripped
 
     if tty:
-        clear = "  " * cols if os.name == "nt" else "\033[K"
+        clear = " " * cols if os.name == "nt" else "\033[K"
         print("\r{}{}".format(line, clear),
               end="", flush=True)
     else:
@@ -380,4 +379,12 @@ def main():
     return 0
 
 if __name__ == "__main__":
+    import codecs
+
+    # because encoding suck m(
+    sys.stdout = codecs.getwriter(sys.stdout.encoding)(
+        sys.stdout.buffer, 'replace')
+    sys.stderr = codecs.getwriter(sys.stderr.encoding)(
+        sys.stderr.buffer, 'replace')
+
     sys.exit(main())
