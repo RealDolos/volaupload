@@ -138,10 +138,12 @@ class Stat:
 def shorten(string, length):
     """Shorten a string to a specific length, cropping in the middle"""
     len2 = length // 2
-    lens = len(string)
+    lens = len(string) + 2
     if lens > length:
-        return "{}…{}".format(string[:len2], string[lens - len2 + 1:])
-    return string
+        return ("[\033[32m{}…{}\033[0m]".
+                format(string[:len2], string[lens - len2 + 1:]))
+    return ("[\033[32m{}\033[0m]{}".
+            format(string, " " * (length - lens)))
 
 
 def progressbar(cur, tot, length):
@@ -161,20 +163,22 @@ def progress_callback(cur, tot, file, nums, stat):
     lnum = len(str(nums["files"]))
     if nums["files"] > 1:
         ptot = progressbar(nums["cur"] + cur, nums["total"], 10) + " "
+    times = ("{:.1f}s/{:.0f}s".
+             format(stat.runtime, stat.eta(tot)))
     fmt = ("\033[1m{}\033[0m"
            "\033[31;1m{:{}}/{:{}}\033[0m - "
            "\033[33;1m{}\033[0m "
            "\033[1m{:6.1%}\033[0m "
-           "[\033[32m{{}}\033[0m] {:.1f}/{:.1f} - "
-           "\033[1m{:.2f}MB/s\033[0m ({:.2f}MB/s), "
-           "\033[34;1m{:.2f}s\033[0m/{:.2f}s")
+           "{{}} {:.1f}/{:.1f} - "
+           "\033[1m{:5.2f}MB/s\033[0m ({:5.2f}MB/s), \033[34;1m{:>12.12}\033[0m"
+           )
     line = fmt.format(ptot,
                       nums["item"], lnum, nums["files"], lnum,
                       progressbar(cur, tot, 30 if cols > 80 else 20),
                       per,
                       ccur, ctot,
                       stat.rate, stat.rate_last,
-                      stat.runtime, stat.eta(tot))
+                      times)
     linestripped = re.sub("\033\[.*?m", "", line)
     line = line.format(shorten(file.name,
                                max(10, cols - len(linestripped) - 2)))
@@ -207,10 +211,7 @@ def upload(room, file, nums, block_size=BLOCK_SIZE):
                          upload_as=file.name,
                          blocksize=block_size,
                          callback=callback)
-
-    print("\n{} done in {:.2f}secs\n".
-          format(file, (datetime.now() - stat.start).total_seconds()))
-
+        print("")
 
 def parse_args():
     """Parse command line arguments into something sane!"""
@@ -368,10 +369,10 @@ def main():
                               file=sys.stderr)
                         time.sleep(attempt * 0.1)
     except Exception as ex:
-        print("Failure to fly: {}".format(ex), file=sys.stderr)
+        print("\nFailure to fly: {}".format(ex), file=sys.stderr)
         return 1
     except KeyboardInterrupt:
-        print("User canceled", file=sys.stderr)
+        print("\nUser canceled", file=sys.stderr)
         return 3
 
     print("All done in {:.2f}secs ({:.2f}MB/s)".
