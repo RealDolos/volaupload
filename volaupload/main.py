@@ -272,7 +272,7 @@ def main():
     except KeyboardInterrupt:
         print("\nUser canceled", file=sys.stderr, flush=True)
         return 3
-
-    print("All done in {:.2f}secs ({:.2f}MB/s)".
-          format(stat.runtime, stat.rate))
+    finally:
+        print("All done in {:.2f}secs ({:.2f}MB/s)".
+              format(stat.runtime, stat.rate))
     return 0
