@@ -4,7 +4,7 @@ from setuptools import setup
 import re
 
 def version():
-    with open("volaupload.py") as fp:
+    with open("volaupload/__init__.py") as fp:
         return re.search('__version__ = "(.+?)"', fp.read()).group(1)
 
 setup(
@@ -16,6 +16,7 @@ setup(
     license="MIT",
     author="RealDolos",
     author_email="dolosthegreat@safe-mail.net",
+    packages=['volaupload'],
     scripts=["volaupload.py"],
     classifiers=[
         "Development Status :: 4 - Beta",
