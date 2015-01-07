@@ -9,7 +9,6 @@ import re
 import shutil
 import sys
 import time
-import warnings
 
 from configparser import ConfigParser
 from functools import partial
@@ -212,8 +211,6 @@ def check_update():
 
 def main():
     """Program, kok"""
-    warnings.simplefilter("ignore")
-
     from volapi import Room
 
     try:

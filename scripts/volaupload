@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """ RealDolos' funky volafile upload tool"""
-# pip install path.py volapi ;)
 # pylint: disable=broad-except
 
 import sys
@@ -37,6 +36,9 @@ def socketeering():
 
 if __name__ == "__main__":
     import codecs
+    import warnings
+
+    warnings.simplefilter("ignore")
 
     # because encoding suck m(
     if sys.stdout.encoding.casefold() != "utf-8".casefold():
