@@ -17,7 +17,7 @@ setup(
     author="RealDolos",
     author_email="dolosthegreat@safe-mail.net",
     packages=['volaupload'],
-    scripts=["volaupload.py"],
+    scripts=["scripts/volaupload.py"],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Environment :: Console",
