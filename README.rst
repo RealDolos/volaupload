@@ -12,8 +12,8 @@ Usage
 -----
 ::
 
-    volaupload.py -r ROOM FILE ...
-    volaupload.py --help
+    volaupload -r ROOM FILE ...
+    volaupload --help
 
 Configuration
 -------------
