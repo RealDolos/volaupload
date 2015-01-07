@@ -4,7 +4,7 @@ from setuptools import setup
 import re
 
 def version():
-    with open("volaupload/__init__.py") as fp:
+    with open("volaupload/_version.py") as fp:
         return re.search('__version__ = "(.+?)"', fp.read()).group(1)
 
 setup(

@@ -17,6 +17,8 @@ from configparser import ConfigParser
 from datetime import datetime
 from functools import partial
 
+from ._version import __version__
+
 # False-positive
 # pylint: disable=no-name-in-module
 from path import path
@@ -32,8 +34,6 @@ except ImportError:
 
     POSIX_FADV_WILLNEED = 0
 # pylint: enable=no-name-in-module
-
-__version__ = "0.6"
 
 FAC = 1024.0 * 1024.0
 BUFFER_SIZE = 1 << 26
