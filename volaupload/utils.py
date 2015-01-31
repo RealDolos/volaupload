@@ -10,7 +10,7 @@ import sys
 try:
     from os import posix_fadvise, POSIX_FADV_WILLNEED
 except ImportError:
-    def posix_fadvice(*args, **kw):
+    def posix_fadvise(*args, **kw):
         """Mock implementation for systems not supporting it"""
         args, kw = args, kw
 
