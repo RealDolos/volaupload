@@ -17,7 +17,7 @@ setup(
     author="RealDolos",
     author_email="dolosthegreat@safe-mail.net",
     packages=['volaupload'],
-    scripts=["scripts/volaupload"],
+    entry_points={"console_scripts": ["volaupload = volaupload.__main__:run"]},
     classifiers=[
         "Development Status :: 4 - Beta",
         "Environment :: Console",
