@@ -140,7 +140,8 @@ def parse_args():
                         default=int(config.get("attempts", 25)),
                         help="Retry failed uploads this many times")
     parser.add_argument("--retarddir", "-R", dest="rdir", action="store_true",
-                        help="Upload all files within directories passed to volaupload")
+                        help="Upload all files within directories passed to "
+                        "volaupload (this is mainly here for people too stupid to find and xargs!)")
     parser.set_defaults(delete=False, rdir=False)
     parser.add_argument('files', metavar='FILE', type=str, nargs='+',
                         help='files to upload')
