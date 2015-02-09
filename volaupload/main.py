@@ -139,7 +139,9 @@ def parse_args():
     parser.add_argument("--attempts", "-t", dest="attempts", type=int,
                         default=int(config.get("attempts", 25)),
                         help="Retry failed uploads this many times")
-    parser.set_defaults(delete=False)
+    parser.add_argument("--retarddir", "-R", dest="rdir", action="store_true",
+                        help="Upload all files within directories passed to volaupload")
+    parser.set_defaults(delete=False, rdir=False)
     parser.add_argument('files', metavar='FILE', type=str, nargs='+',
                         help='files to upload')
     args = parser.parse_args()
@@ -163,6 +165,8 @@ def parse_args():
                 continue
             if i.isfile():
                 yield i
+            elif args.rdir and i.isdir():
+                yield from i.walkfiles()
 
     args.files = list(files_because_windows_is_stupid(args.files))
 
