@@ -139,6 +139,9 @@ def parse_args():
     parser.add_argument("--attempts", "-t", dest="attempts", type=int,
                         default=int(config.get("attempts", 25)),
                         help="Retry failed uploads this many times")
+    parser.add_argument("--bind", "-i", dest="bind", type=str,
+                        default=config.get("bind", None),
+                        help="Bind to specific source address")
     parser.add_argument("--retarddir", "-R", dest="rdir", action="store_true",
                         help="Upload all files within directories passed to "
                         "volaupload (this is mainly here for people too stupid to find and xargs!)")
@@ -173,6 +176,13 @@ def parse_args():
 
     if not len(args.files):
         parser.error("No valid files selected")
+
+    if args.sort == "none":
+        pass
+    elif args.sort == "rnd":
+        random.shuffle(args.files)
+    elif args.sort:
+        args.files = sorted(args.files, key=SORTING[args.sort])
 
     return args
 
@@ -213,10 +223,45 @@ def check_update():
               format(ver, url),
               flush=True)
 
+def override_socket(bind):
+    """ Bind all sockets to specific address """
+    import socket
+
+    class BoundSocket(socket.socket):
+        """
+        requests is kinda an asshole when it comes to using source_address.
+        Also volapi is also an asshole.
+        """
+
+        def __init__(self, *args, **kw):
+            super().__init__(*args, **kw)
+
+        def connect(self, address):
+            try:
+                self.bind((bind, 0))
+            except Exception:
+                pass
+            return super().connect(address)
+
+        def connect_ex(self, address):
+            try:
+                self.bind((bind, 0))
+            except Exception:
+                pass
+            return super().connect_ex(address)
+
+        def bind(self, address):
+            super().bind(address)
+
+    socket.socket = BoundSocket
 
 def main():
     """Program, kok"""
-    from volapi import Room
+
+    args = parse_args()
+
+    if args.bind:
+        override_socket(args.bind)
 
     try:
         check_update()
@@ -224,7 +269,7 @@ def main():
         print("Failed to check for new version:", ex,
               file=sys.stderr, flush=True)
 
-    args = parse_args()
+    from volapi import Room
 
     stat = Statistics()
     total_current = 0
@@ -239,12 +284,6 @@ def main():
                 print("done")
 
             files = args.files
-            if args.sort == "none":
-                pass
-            elif args.sort == "rnd":
-                random.shuffle(files)
-            elif args.sort:
-                files = sorted(files, key=SORTING[args.sort])
             total_length = sum(f.size for f in files)
 
             print("Pushing attack bytes to mainframe... {:.2f}MB in total".
