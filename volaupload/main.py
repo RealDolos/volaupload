@@ -275,6 +275,12 @@ def main():
     total_current = 0
     try:
         print("Starting DoS... ", end="", flush=True)
+
+        if args.user.casefold() == "robocop".casefold():
+            class UserIsAFeggit(Exception):
+                pass
+            raise UserIsAFeggit("robocop, pls")
+
         with Room(args.room, args.user, subscribe=False) as room:
             print("done")
             if args.passwd:
@@ -284,6 +290,10 @@ def main():
                 print("done")
 
             files = args.files
+            if any(f.name == "Thumbs.db" for f in files):
+                class NotGonnaDoIt(Exception):
+                    pass
+                raise NotGonnaDoIt("No Thumbs.db for you!")
             total_length = sum(f.size for f in files)
 
             print("Pushing attack bytes to mainframe... {:.2f}MB in total".
@@ -311,7 +321,7 @@ def main():
                               file=sys.stderr, flush=True)
                         time.sleep(attempt * 0.1)
     except Exception as ex:
-        print("\nFailure to fly: {}".format(ex), file=sys.stderr, flush=True)
+        print("\nFailure to fly: {} ({})".format(ex, type(ex)), file=sys.stderr, flush=True)
         return 1
     except KeyboardInterrupt:
         print("\nUser canceled", file=sys.stderr, flush=True)
