@@ -62,10 +62,11 @@ def try_advise(file, offset, length):
 def shorten(string, length):
     """Shorten a string to a specific length, cropping in the middle"""
     len2 = length // 2
+    len3 = length - len2 - 1
     lens = len(string) + 2
     if lens > length:
         return ("[\033[32m{}…{}\033[0m]".
-                format(string[:len2], string[lens - len2 + 1:]))
+                format(string[:len2], string[lens - len3:]))
     return ("[\033[32m{}\033[0m]{}".
             format(string, " " * (length - lens)))
 
