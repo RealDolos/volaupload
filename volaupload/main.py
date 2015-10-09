@@ -33,7 +33,7 @@ CONFIG = path("~/.vola.conf").expand()
 UPDATE_INFO = "https://api.github.com/repos/RealDolos/volaupload/tags"
 
 
-def progress_callback(cur, tot, file, nums, stat):
+def progress_callback(cur, tot, file, nums, stat, info):
     """Print progress (and fadvise)"""
     # pylint: disable=anomalous-backslash-in-string
     stat.record(cur)
@@ -57,14 +57,16 @@ def progress_callback(cur, tot, file, nums, stat):
                "\033[31;1m{:{}}/{:{}}\033[0m - "
                "\033[33;1m{}\033[0m "
                "\033[1m{:6.1%}\033[0m "
-               "{{}} {:.1f}/{:.1f} - "
+               "{{}} {:.1f}/{:.1f} {}/{} - "
                "\033[1m{:5.2f}MB/s\033[0m ({:5.2f}MB/s), "
                "\033[34;1m{:>12.12}\033[0m")
+        server = info.get("server", "NA").split(".", 1)[0]
         return fmt.format(ptot,
                           nums["item"], lnum, nums["files"], lnum,
                           progressbar(cur, tot, 30 if cols > 80 else 20),
                           per,
                           ccur, ctot,
+                          server, info.get("resumecount", 0),
                           stat.rate, stat.rate_last,
                           times)
 
@@ -89,17 +91,27 @@ def progress_callback(cur, tot, file, nums, stat):
         try_advise(file, cur + BUFFER_SIZE, BUFFER_SIZE * 2)
 
 
-def upload(room, file, nums, block_size=BLOCK_SIZE):
+def upload(room, file, nums, block_size=BLOCK_SIZE, force_server=None):
     """Uploads a file and prints the progress while pushing bits and bytes"""
     stat = Statistics()
+    info = dict(server="")
+
+    def information(idict):
+        nonlocal info, force_server
+        info.update(idict)
+        if force_server:
+            return info.get("server", "") == force_server
+        return True
+
     with open(file, "rb", buffering=block_size) as advp:
         callback = partial(progress_callback,
-                           file=advp, nums=nums, stat=stat)
+                           file=advp, nums=nums, stat=stat, info=info)
         callback(0, file.size)
         room.upload_file(advp,
                          upload_as=file.name,
                          blocksize=block_size,
-                         callback=callback)
+                         callback=callback,
+                         information_callback=information)
         print("", flush=True)
 
 
@@ -139,12 +151,15 @@ def parse_args():
     parser.add_argument("--attempts", "-t", dest="attempts", type=int,
                         default=int(config.get("attempts", 25)),
                         help="Retry failed uploads this many times")
-    parser.add_argument("--bind", "-i", dest="bind", type=str,
+    parser.add_argument("--bind", "-i", dest="bind", type=str
                         default=config.get("bind", None),
                         help="Bind to specific source address")
     parser.add_argument("--retarddir", "-R", dest="rdir", action="store_true",
                         help="Upload all files within directories passed to "
                         "volaupload (this is mainly here for people too stupid to find and xargs!)")
+    parser.add_argument("--force-server", dest="force_server", type=str,
+                        default=config.get("force_server", None),
+                        help="Force a particular server")
     parser.set_defaults(delete=False, rdir=False)
     parser.add_argument('files', metavar='FILE', type=str, nargs='+',
                         help='files to upload')
@@ -301,7 +316,8 @@ def main():
                   flush=True)
             upload_file = partial(upload,
                                   room=room,
-                                  block_size=args.block_size)
+                                  block_size=args.block_size,
+                                  force_server=args.force_server)
             for i, file in enumerate(files):
                 for attempt in range(args.attempts):
                     try:
