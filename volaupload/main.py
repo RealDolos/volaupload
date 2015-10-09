@@ -50,7 +50,7 @@ def progress_callback(cur, tot, file, nums, stat, info):
         ptot = ""
         lnum = len(str(nums["files"]))
         if nums["files"] > 1:
-            ptot = progressbar(nums["cur"] + cur, nums["total"], 10) + " "
+            ptot = progressbar(nums["cur"] + cur, nums["total"], 10 if cols > 80 else 5) + " "
         times = ("{:.1f}s/{:.0f}s".
                  format(stat.runtime, stat.eta(tot)))
         fmt = ("\033[1m{}\033[0m"
@@ -63,7 +63,7 @@ def progress_callback(cur, tot, file, nums, stat, info):
         server = info.get("server", "NA").split(".", 1)[0]
         return fmt.format(ptot,
                           nums["item"], lnum, nums["files"], lnum,
-                          progressbar(cur, tot, 30 if cols > 80 else 20),
+                          progressbar(cur, tot, 30 if cols > 80 else 10),
                           per,
                           ccur, ctot,
                           server, info.get("resumecount", 0),
