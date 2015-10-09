@@ -151,7 +151,7 @@ def parse_args():
     parser.add_argument("--attempts", "-t", dest="attempts", type=int,
                         default=int(config.get("attempts", 25)),
                         help="Retry failed uploads this many times")
-    parser.add_argument("--bind", "-i", dest="bind", type=str
+    parser.add_argument("--bind", "-i", dest="bind", type=str,
                         default=config.get("bind", None),
                         help="Bind to specific source address")
     parser.add_argument("--retarddir", "-R", dest="rdir", action="store_true",
