@@ -28,6 +28,9 @@ def to_name(file):
     """Sortkey by-name"""
     return natsort(file.name.casefold()), natsort(file.parent)
 
+def to_path(file):
+    return natsort(file.casefold())
+
 
 def to_size(file):
     """Sortkey by-size"""
@@ -35,6 +38,7 @@ def to_size(file):
 
 
 SORTING = dict(name=to_name,
+               path=to_path,
                size=to_size)
 
 
