@@ -29,7 +29,7 @@ Windows user might wanna try:
 
 ::
 
-    py -3 -m pip volaupload ...
+    py -3 -m volaupload ...
 
 Configuration
 -------------
