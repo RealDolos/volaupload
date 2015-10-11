@@ -4,9 +4,18 @@ The `volafile.io <https://volafile.io/>`_ upload tool of your choice!
 
 Installation
 ------------
+Use pip already
+
 ::
 
     pip install https://github.com/RealDolos/volaupload/archive/master.zip
+
+
+Windows user might wanna try, after installing python3 that is:
+
+::
+
+    py -3 -m pip install https://github.com/RealDolos/volaupload/archive/master.zip
 
 Usage
 -----
@@ -14,6 +23,13 @@ Usage
 
     volaupload -r ROOM FILE ...
     volaupload --help
+
+
+Windows user might wanna try:
+
+::
+
+    py -3 -m pip volaupload ...
 
 Configuration
 -------------
