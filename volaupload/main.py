@@ -291,11 +291,6 @@ def main():
     try:
         print("Starting DoS... ", end="", flush=True)
 
-        if args.user.casefold() == "robocop".casefold():
-            class UserIsAFeggit(Exception):
-                pass
-            raise UserIsAFeggit("robocop, pls")
-
         with Room(args.room, args.user, subscribe=False) as room:
             print("done")
             if args.passwd:
