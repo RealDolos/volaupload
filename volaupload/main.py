@@ -20,6 +20,7 @@ from .utils import progressbar
 from .utils import shorten
 from .utils import SORTING
 from .utils import try_advise
+from .utils import POSIX_FADV_WILLNEED
 from .utils import try_unlink
 
 # False-positive
@@ -33,7 +34,15 @@ CONFIG = path("~/.vola.conf").expand()
 UPDATE_INFO = "https://api.github.com/repos/RealDolos/volaupload/tags"
 
 
-def progress_callback(cur, tot, file, nums, stat, info):
+def get_version():
+    """Get a printable version string"""
+    parts = [__version__]
+    if POSIX_FADV_WILLNEED:
+        parts += "(fadvise)",
+    return " ".join(parts)
+
+
+def progress_callback(cur, tot, file, name, nums, stat, info):
     """Print progress (and fadvise)"""
     # pylint: disable=anomalous-backslash-in-string
     stat.record(cur)
@@ -60,7 +69,7 @@ def progress_callback(cur, tot, file, nums, stat, info):
                "{{}} {:.1f}/{:.1f} {}/{} - "
                "\033[1m{:5.2f}MB/s\033[0m ({:5.2f}MB/s), "
                "\033[34;1m{:>12.12}\033[0m")
-        server = info.get("server", "NA").split(".", 1)[0]
+        server = (info.get("server", "") or "N/A").split(".", 1)[0]
         return fmt.format(ptot,
                           nums["item"], lnum, nums["files"], lnum,
                           progressbar(cur, tot, 30 if cols > 80 else 10),
@@ -71,7 +80,7 @@ def progress_callback(cur, tot, file, nums, stat, info):
                           times)
 
     line, stripped = colorstripped(baseinfo())
-    short_file = shorten(file.name, max(10, cols - len(stripped) - 2))
+    short_file = shorten(name, max(10, cols - len(stripped) - 2))
     line, stripped = colorstripped(line.format(short_file))
 
     cols = max(0, cols - len(stripped) - 4)
@@ -97,6 +106,7 @@ def upload(room, file, nums, block_size=BLOCK_SIZE, force_server=None):
     info = dict(server="")
 
     def information(idict):
+        """Information callback"""
         nonlocal info, force_server
         info.update(idict)
         if force_server:
@@ -105,7 +115,8 @@ def upload(room, file, nums, block_size=BLOCK_SIZE, force_server=None):
 
     with open(file, "rb", buffering=block_size) as advp:
         callback = partial(progress_callback,
-                           file=advp, nums=nums, stat=stat, info=info)
+                           file=advp, name=file.name,
+                           nums=nums, stat=stat, info=info)
         callback(0, file.size)
         room.upload_file(advp,
                          upload_as=file.name,
@@ -160,6 +171,8 @@ def parse_args():
     parser.add_argument("--force-server", dest="force_server", type=str,
                         default=config.get("force_server", None),
                         help="Force a particular server")
+    parser.add_argument("--version", "-V", action="version", version=get_version(),
+                        help=argparse.SUPPRESS)
     parser.set_defaults(delete=False, rdir=False)
     parser.add_argument('files', metavar='FILE', type=str, nargs='+',
                         help='files to upload')
@@ -302,6 +315,7 @@ def main():
             files = args.files
             if any(f.name == "Thumbs.db" for f in files):
                 class NotGonnaDoIt(Exception):
+                    """roboCop, pls"""
                     pass
                 raise NotGonnaDoIt("No Thumbs.db for you!")
             total_length = sum(f.size for f in files)
