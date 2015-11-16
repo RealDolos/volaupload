@@ -29,6 +29,7 @@ def to_name(file):
     return natsort(file.name.casefold()), natsort(file.parent)
 
 def to_path(file):
+    """Sortkey by-path"""
     return natsort(file.casefold())
 
 
@@ -55,10 +56,11 @@ def try_unlink(file):
 def try_advise(file, offset, length):
     """Try to advise the OS on what file data is needed next"""
     try:
-        posix_fadvise(file.fileno(),
-                      offset,
-                      length,
-                      POSIX_FADV_WILLNEED)
+        if hasattr(file, "fileno"):
+            posix_fadvise(file.fileno(),
+                          offset,
+                          length,
+                          POSIX_FADV_WILLNEED)
     except Exception as ex:
         print(ex, file=sys.stderr, flush=True)
 

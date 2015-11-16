@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
+"""
+Set it up!!!!
+volaupload welcomes all cucks
+"""
 
 from setuptools import setup
 import re
 
 def version():
-    with open("volaupload/_version.py") as fp:
-        return re.search('__version__ = "(.+?)"', fp.read()).group(1)
+    """Thanks python!"""
+    with open("volaupload/_version.py") as filep:
+        return re.search('__version__ = "(.+?)"', filep.read()).group(1)
 
 setup(
     name="volaupload",
@@ -15,7 +20,7 @@ setup(
     url="https://github.com/RealDolos/volaupload",
     license="MIT",
     author="RealDolos",
-    author_email="dolosthegreat@safe-mail.net",
+    author_email="dolos@cock.li",
     packages=['volaupload'],
     entry_points={"console_scripts": ["volaupload = volaupload.__main__:run"]},
     classifiers=[
@@ -32,4 +37,4 @@ setup(
         "Topic :: Utilities",
     ],
     install_requires=[l.strip() for l in open("requirements.txt").readlines()]
-)
+    )
