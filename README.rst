@@ -8,7 +8,7 @@ Use pip already
 
 ::
 
-    pip install https://github.com/RealDolos/volaupload/archive/master.zip
+    pip3 install https://github.com/RealDolos/volaupload/archive/master.zip
 
 
 Windows user might wanna try, after installing python3 that is:
