@@ -131,8 +131,13 @@ def parse_args():
     sorts = tuple(SORTING.keys()) + ("none", "rnd")
 
     config = ConfigParser()
+    aliases = dict()
     try:
         config.read(CONFIG)
+        try:
+            aliases = config["aliases"]
+        except Exception:
+            pass
         config = config["vola"]
     except Exception:
         config = dict()
@@ -144,7 +149,7 @@ def parse_args():
                 " block_size accordingly")
         )
     parser.add_argument('--room', '-r', dest='room', type=str, required=True,
-                        help='room to upload to')
+                        help='room or alias to upload to')
     parser.add_argument('--user', '-u', dest='user', type=str,
                         default=config.get("user", None),
                         help='user name to use')
@@ -184,6 +189,7 @@ def parse_args():
     if args.passwd and args.passwd == "":
         parser.error("No valid user password provided")
 
+    args.room = aliases.get(args.room, args.room)
     if not args.room:
         parser.error("No valid room provided")
 

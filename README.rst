@@ -39,3 +39,12 @@ Currently the following configuration parameters are recognized:
 
 - :code:`user` - User name to use with vola
 - :code:`passwd` - Password to greenfag the user with
+- :code:`attempts` - Number of attempts to perform
+- :code:`bind` - to a specific address
+- :code:`force_server` - Because not all servers are equal
+
+Additionally, you may create an :code:`[aliases]` section, where you can specify
+case insensitive names for rooms, e.g.
+
+- :code:`beepi = BEEPi`
+- :code:`cucks = BEEPi`
