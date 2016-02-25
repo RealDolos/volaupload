@@ -100,7 +100,7 @@ def progress_callback(cur, tot, file, name, nums, stat, info):
         try_advise(file, cur + BUFFER_SIZE, BUFFER_SIZE * 2)
 
 
-def upload(room, file, nums, block_size=BLOCK_SIZE, force_server=None):
+def upload(room, file, nums, block_size=BLOCK_SIZE, force_server=None, prefix=None):
     """Uploads a file and prints the progress while pushing bits and bytes"""
     stat = Statistics()
     info = dict(server="")
@@ -118,8 +118,11 @@ def upload(room, file, nums, block_size=BLOCK_SIZE, force_server=None):
                            file=advp, name=file.name,
                            nums=nums, stat=stat, info=info)
         callback(0, file.size)
+        upload_as = file.name
+        if prefix:
+            upload_as = "{} - {}".format(prefix.strip(), upload_as)
         room.upload_file(advp,
-                         upload_as=file.name,
+                         upload_as=upload_as,
                          blocksize=block_size,
                          callback=callback,
                          information_callback=information)
@@ -167,6 +170,8 @@ def parse_args():
     parser.add_argument("--attempts", "-t", dest="attempts", type=int,
                         default=int(config.get("attempts", 25)),
                         help="Retry failed uploads this many times")
+    parser.add_argument("--prefix", dest="prefix", type=str, default=None,
+                        help="Prefix file names")
     parser.add_argument("--bind", "-i", dest="bind", type=str,
                         default=config.get("bind", None),
                         help="Bind to specific source address")
@@ -332,7 +337,8 @@ def main():
             upload_file = partial(upload,
                                   room=room,
                                   block_size=args.block_size,
-                                  force_server=args.force_server)
+                                  force_server=args.force_server,
+                                  prefix=args.prefix)
             for i, file in enumerate(files):
                 for attempt in range(args.attempts):
                     try:
