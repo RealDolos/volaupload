@@ -81,3 +81,18 @@ def progressbar(cur, tot, length):
     """Generate a progress bar"""
     per = math.floor(cur * float(length) / tot)
     return "[{}{}]".format("#" * per, " " * (length - per))
+
+
+def format_time(secs):
+    """Format times for Kokytos"""
+    m, s = divmod(int(secs), 60)
+    h, m = divmod(m, 60)
+    d, h = divmod(h, 24)
+    if d:
+        # Yes, vola is this shit :*(
+        return "{}::{:02}:{:02}:{:02}".format(d, h, m, s)
+    if h:
+        return "{}:{:02}:{:02}".format(h, m, s)
+    if m:
+        return "{:02}:{:02}".format(m, s)
+    return "{}s".format(s)

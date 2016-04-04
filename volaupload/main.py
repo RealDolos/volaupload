@@ -14,19 +14,23 @@ from configparser import ConfigParser
 from functools import partial
 
 from ._version import __version__
+
 from .stat import FAC
 from .stat import Statistics
+
+from .utils import format_time
+from .utils import POSIX_FADV_WILLNEED
 from .utils import progressbar
 from .utils import shorten
 from .utils import SORTING
 from .utils import try_advise
-from .utils import POSIX_FADV_WILLNEED
 from .utils import try_unlink
 
 # False-positive
 # pylint: disable=no-name-in-module
 from path import path
 # pylint: enable=no-name-in-module
+
 
 BUFFER_SIZE = 1 << 26
 BLOCK_SIZE = 1 << 20
@@ -59,28 +63,33 @@ def progress_callback(cur, tot, file, name, nums, stat, info):
         ptot = ""
         lnum = len(str(nums["files"]))
         if nums["files"] > 1:
-            ptot = progressbar(nums["cur"] + cur, nums["total"], 10 if cols > 80 else 5) + " "
-        times = ("{:.1f}s/{:.0f}s".
-                 format(stat.runtime, stat.eta(tot)))
-        fmt = ("\033[1m{}\033[0m"
-               "\033[31;1m{:{}}/{:{}}\033[0m - "
-               "\033[33;1m{}\033[0m "
-               "\033[1m{:6.1%}\033[0m "
-               "{{}} {:.1f}/{:.1f} {}/{} - "
-               "\033[1m{:5.2f}MB/s\033[0m ({:5.2f}MB/s), "
-               "\033[34;1m{:>12.12}\033[0m")
+            if cols > 100:
+                ptot = progressbar(nums["cur"] + cur, nums["total"], 10) + " "
+            else:
+                ptot = "{:3.0%}".format(min(0.999, float(nums["cur"] + cur) / nums["total"]))
+        times = "{}/{}".format(format_time(stat.runtime), format_time(stat.eta(tot)))
+        fmt = ("\033[1m{ptot}\033[0m"
+               "\033[31;1m{num:{lnum}}/{files:{lnum}}\033[0m - "
+               "\033[33;1m{progress}\033[0m "
+               "\033[1m{per:6.1%}\033[0m "
+               "{{}} {ccur:.1f}/{ctot:.1f} {server}{resumes} - "
+               "\033[1m{rate:5.2f}MB/s\033[0m ({lrate:5.2f}MB/s), "
+               "\033[34;1m{times:>11}\033[0m")
         server = (info.get("server", "") or "N/A").split(".", 1)[0]
-        return fmt.format(ptot,
-                          nums["item"], lnum, nums["files"], lnum,
-                          progressbar(cur, tot, 30 if cols > 80 else 10),
-                          per,
-                          ccur, ctot,
-                          server, info.get("resumecount", 0),
-                          stat.rate, stat.rate_last,
-                          times)
+        resumes = info.get("resumecount", 0)
+        resumes = "" if not resumes else "/{}".format(resumes)
+        return fmt.format(ptot=ptot,
+                          num=nums["item"], lnum=lnum,
+                          files=nums["files"],
+                          progress=progressbar(cur, tot, 30 if cols > 100 else 5),
+                          per=per,
+                          ccur=ccur, ctot=ctot,
+                          server=server, resumes=resumes,
+                          rate=stat.rate, lrate=stat.rate_last,
+                          times=times)
 
     line, stripped = colorstripped(baseinfo())
-    short_file = shorten(name, max(10, cols - len(stripped) - 2))
+    short_file = shorten(name, max(5, cols - len(stripped) - 2))
     line, stripped = colorstripped(line.format(short_file))
 
     cols = max(0, cols - len(stripped) - 4)
