@@ -5,12 +5,18 @@ volaupload welcomes all cucks
 """
 
 from setuptools import setup
+
+import os
 import re
 
 def version():
     """Thanks python!"""
     with open("volaupload/_version.py") as filep:
         return re.search('__version__ = "(.+?)"', filep.read()).group(1)
+
+requirements = [l.strip() for l in open("requirements.txt").readlines()]
+if os.name == "nt":
+    requirements += "win-unicode-console", "colorama"
 
 setup(
     name="volaupload",
@@ -36,5 +42,5 @@ setup(
         "Topic :: System :: Archiving",
         "Topic :: Utilities",
     ],
-    install_requires=[l.strip() for l in open("requirements.txt").readlines()]
+    install_requires=requirements
     )

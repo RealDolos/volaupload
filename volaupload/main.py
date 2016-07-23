@@ -31,6 +31,12 @@ from .utils import try_unlink
 from path import path
 # pylint: enable=no-name-in-module
 
+try:
+    import colorama
+    has_colorama = True
+except ImportError:
+    has_colorama = False
+
 
 BUFFER_SIZE = 1 << 26
 BLOCK_SIZE = 1 << 20
@@ -94,7 +100,7 @@ def progress_callback(cur, tot, file, name, nums, stat, info):
 
     cols = max(0, cols - len(stripped) - 4)
     tty = sys.stdout.isatty()
-    if not tty or os.name == "nt":
+    if not tty or (not has_colorama and os.name == "nt"):
         line = stripped
 
     if tty:

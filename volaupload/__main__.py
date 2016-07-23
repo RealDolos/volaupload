@@ -9,18 +9,21 @@ from volaupload import main
 
 def run():
     """ Run as CLI command """
-    import codecs
+
+    try:
+        import win_unicode_console
+        win_unicode_console.enable(use_unicode_argv=True)
+    except ImportError:
+        pass
+
+    try:
+        import colorama
+        colorama.init()
+    except ImportError:
+        pass
+
     import warnings
-
     warnings.simplefilter("ignore")
-
-    # because encoding suck m(
-    if sys.stdout.encoding.casefold() != "utf-8".casefold():
-        sys.stdout = codecs.getwriter(sys.stdout.encoding)(
-            sys.stdout.buffer, 'replace')
-    if sys.stderr.encoding.casefold() != "utf-8".casefold():
-        sys.stderr = codecs.getwriter(sys.stderr.encoding)(
-            sys.stderr.buffer, 'replace')
 
     sys.exit(main())
 
