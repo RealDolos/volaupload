@@ -1,6 +1,6 @@
 """ RealDolos' funky volafile upload tool"""
 
-# pylint: disable=broad-except
+# pylint: disable=broad-except,anomalous-backslash-in-string,too-few-public-methods
 
 import argparse
 import os
@@ -12,6 +12,8 @@ import time
 
 from configparser import ConfigParser
 from functools import partial
+
+from path import Path
 
 from ._version import __version__
 
@@ -26,21 +28,16 @@ from .utils import SORTING
 from .utils import try_advise
 from .utils import try_unlink
 
-# False-positive
-# pylint: disable=no-name-in-module
-from path import path
-# pylint: enable=no-name-in-module
-
 try:
     import colorama
-    has_colorama = True
+    HAS_COLORAMA = True
 except ImportError:
-    has_colorama = False
+    HAS_COLORAMA = False
 
 
 BUFFER_SIZE = 1 << 26
 BLOCK_SIZE = 1 << 20
-CONFIG = path("~/.vola.conf").expand()
+CONFIG = Path("~/.vola.conf").expand()
 UPDATE_INFO = "https://api.github.com/repos/RealDolos/volaupload/tags"
 
 
@@ -52,72 +49,80 @@ def get_version():
     return " ".join(parts)
 
 
-def progress_callback(cur, tot, file, name, nums, stat, info):
-    """Print progress (and fadvise)"""
-    # pylint: disable=anomalous-backslash-in-string
-    stat.record(cur)
+class Callback:
+    """ Bundle and print process information """
+    def __init__(self, file, name, nums, info):
+        self.file = file
+        self.name = name
+        self.nums = nums
+        self.info = info
+        self.stat = Statistics()
 
-    cols = shutil.get_terminal_size((25, 72)).columns
+    def __call__(self, cur, tot):
+        """Print progress (and fadvise)"""
+        self.stat.record(cur)
 
-    def colorstripped(line):
-        """Return regularly colored and stripped versions of a print message"""
-        return line, re.sub("\033\[.*?m", "", line)
+        cols = shutil.get_terminal_size((25, 72)).columns
 
-    def baseinfo():
-        """Compose basic information"""
-        ccur, ctot, per = cur / FAC, tot / FAC, float(cur) / tot
-        ptot = ""
-        lnum = len(str(nums["files"]))
-        if nums["files"] > 1:
-            if cols > 100:
-                ptot = progressbar(nums["cur"] + cur, nums["total"], 10) + " "
-            else:
-                ptot = "{:3.0%}".format(min(0.999, float(nums["cur"] + cur) / nums["total"]))
-        times = "{}/{}".format(format_time(stat.runtime), format_time(stat.eta(tot)))
-        fmt = ("\033[1m{ptot}\033[0m"
-               "\033[31;1m{num:{lnum}}/{files:{lnum}}\033[0m - "
-               "\033[33;1m{progress}\033[0m "
-               "\033[1m{per:6.1%}\033[0m "
-               "{{}} {ccur:.1f}/{ctot:.1f} {server}{resumes} - "
-               "\033[1m{rate:5.2f}MB/s\033[0m ({lrate:5.2f}MB/s), "
-               "\033[34;1m{times:>11}\033[0m")
-        server = (info.get("server", "") or "N/A").split(".", 1)[0]
-        resumes = info.get("resumecount", 0)
-        resumes = "" if not resumes else "/{}".format(resumes)
-        return fmt.format(ptot=ptot,
-                          num=nums["item"], lnum=lnum,
-                          files=nums["files"],
-                          progress=progressbar(cur, tot, 30 if cols > 100 else 5),
-                          per=per,
-                          ccur=ccur, ctot=ctot,
-                          server=server, resumes=resumes,
-                          rate=stat.rate, lrate=stat.rate_last,
-                          times=times)
+        def colorstripped(line):
+            """Return regularly colored and stripped versions of a print message"""
+            return line, re.sub("\033\[.*?m", "", line)
 
-    line, stripped = colorstripped(baseinfo())
-    short_file = shorten(name, max(5, cols - len(stripped) - 2))
-    line, stripped = colorstripped(line.format(short_file))
+        def baseinfo():
+            """Compose basic information"""
+            ccur, ctot, per = cur / FAC, tot / FAC, float(cur) / tot
+            ptot = ""
+            lnum = len(str(self.nums["files"]))
+            if self.nums["files"] > 1:
+                if cols > 100:
+                    ptot = progressbar(self.nums["cur"] + cur, self.nums["total"], 10) + " "
+                else:
+                    ptot = "{:3.0%}".format(
+                        min(0.999, float(self.nums["cur"] + cur) / self.nums["total"]))
+            times = "{}/{}".format(format_time(self.stat.runtime), format_time(self.stat.eta(tot)))
+            fmt = ("\033[1m{ptot}\033[0m"
+                   "\033[31;1m{num:{lnum}}/{files:{lnum}}\033[0m - "
+                   "\033[33;1m{progress}\033[0m "
+                   "\033[1m{per:6.1%}\033[0m "
+                   "{{}} {ccur:.1f}/{ctot:.1f} {server}{resumes} - "
+                   "\033[1m{rate:5.2f}MB/s\033[0m ({lrate:5.2f}MB/s), "
+                   "\033[34;1m{times:>11}\033[0m")
+            server = (self.info.get("server", "") or "N/A").split(".", 1)[0]
+            resumes = self.info.get("resumecount", 0)
+            resumes = "" if not resumes else "/{}".format(resumes)
+            return fmt.format(ptot=ptot,
+                              num=self.nums["item"], lnum=lnum,
+                              files=self.nums["files"],
+                              progress=progressbar(cur, tot, 30 if cols > 100 else 5),
+                              per=per,
+                              ccur=ccur, ctot=ctot,
+                              server=server, resumes=resumes,
+                              rate=self.stat.rate, lrate=self.stat.rate_last,
+                              times=times)
 
-    cols = max(0, cols - len(stripped) - 4)
-    tty = sys.stdout.isatty()
-    if not tty or (not has_colorama and os.name == "nt"):
-        line = stripped
+        line, stripped = colorstripped(baseinfo())
+        short_file = shorten(self.name, max(5, cols - len(stripped) - 2))
+        line, stripped = colorstripped(line.format(short_file))
 
-    if tty:
-        clear = " " * cols if os.name == "nt" else "\033[K"
-        print("\r{}{}".format(line, clear),
-              end="", flush=True)
-    else:
-        print(line, flush=True)
+        cols = max(0, cols - len(stripped) - 4)
+        tty = sys.stdout.isatty()
+        if not tty or (not HAS_COLORAMA and os.name == "nt"):
+            line = stripped
 
-    # Tell OS to buffer some moar!
-    if cur + BUFFER_SIZE < tot:
-        try_advise(file, cur + BUFFER_SIZE, BUFFER_SIZE * 2)
+        if tty:
+            clear = " " * cols if os.name == "nt" else "\033[K"
+            print("\r{}{}".format(line, clear),
+                  end="", flush=True)
+        else:
+            print(line, flush=True)
+
+        # Tell OS to buffer some moar!
+        if cur + BUFFER_SIZE < tot:
+            try_advise(self.file, cur + BUFFER_SIZE, BUFFER_SIZE * 2)
 
 
 def upload(room, file, nums, block_size=BLOCK_SIZE, force_server=None, prefix=None):
     """Uploads a file and prints the progress while pushing bits and bytes"""
-    stat = Statistics()
     info = dict(server="")
 
     def information(idict):
@@ -129,9 +134,7 @@ def upload(room, file, nums, block_size=BLOCK_SIZE, force_server=None, prefix=No
         return True
 
     with open(file, "rb", buffering=block_size) as advp:
-        callback = partial(progress_callback,
-                           file=advp, name=file.name,
-                           nums=nums, stat=stat, info=info)
+        callback = Callback(advp, file.name, nums, info)
         callback(0, file.size)
         upload_as = file.name
         if prefix:
@@ -216,9 +219,9 @@ def parse_args():
     def files_because_windows_is_stupid(files):
         """Windows is too stupid to glob"""
         for i in files:
-            i = path(i)
+            i = Path(i)
             if "*" in i or "?" in i and os.name == "nt":
-                parent = i.parent or path(".")
+                parent = i.parent or Path(".")
                 yield from parent.files(str(i.name))
                 continue
             if i.isfile():
