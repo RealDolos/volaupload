@@ -143,7 +143,8 @@ def upload(room, file, nums, block_size=BLOCK_SIZE, force_server=None, prefix=No
                          upload_as=upload_as,
                          blocksize=block_size,
                          callback=callback,
-                         information_callback=information)
+                         information_callback=information,
+                         allow_timeout=True)
         print("", flush=True)
 
 
